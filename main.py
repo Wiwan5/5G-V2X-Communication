@@ -12,17 +12,25 @@ import requests
 
 KAFKA_BROKER_URL = config('KAFKA_BROKER_URL')
 TRANSACTIONS_TOPIC = config('TRANSACTIONS_TOPIC')
+DDS_TOPIC = config('DDS_TOPIC')
 TRANSACTIONS_PER_SECOND = 0.01
 SLEEP_TIME = 1 / TRANSACTIONS_PER_SECOND
+USERNAME = config('USERNAME_ON_CLN')
+PASSWORD = config('PASSWORD_ON_CLN')
 
-class Transaction(Thread):
+class Transaction():
     def __init__(self):
         self.now = self.__gps()
         self.username = ""
         self.carID = config('CARID')
         self.producer = KafkaProducer(
             bootstrap_servers=KAFKA_BROKER_URL,
-            # Encode all values as JSON
+            api_version=(0, 10, 1),
+            # ver sasl plain
+            # security_protocol='SASL_PLAINTEXT',
+            # sasl_mechanism='PLAIN',
+            # sasl_plain_username=USERNAME,           
+            # sasl_plain_password=PASSWORD,
             value_serializer=lambda value: json.dumps(value).encode(),
         )
         self.response_time = 0
@@ -54,10 +62,10 @@ class Transaction(Thread):
             'condition': 'DDS',
             'time': str(datetime.now()),
             'response_time': response_time,
-            'working_time': str(datetime.now()- self.working_time),
+            'working_time': (datetime.now()- self.working_time).total_seconds()/60,
         }
-        self.producer.send(TRANSACTIONS_TOPIC, value=transaction) 
         print(transaction)
+        self.producer.send(DDS_TOPIC, value=transaction)         
 
     
     def create_transaction_accident(self) :
