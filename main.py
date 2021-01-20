@@ -42,8 +42,8 @@ class Transaction():
         geo_request = requests.get('https://get.geojs.io/v1/ip/geo/' +my_ip + '.json')
         geo_data = geo_request.json()
         return{
-            'lat': geo_data['latitude'],
-            "lng": geo_data['longitude'],
+            'lat': geo_data['latitude']+randint(1,99)/100,
+            "lng": geo_data['longitude']+randint(1,99)/100,
         }
 
     def set_username(self,name):
