@@ -42,8 +42,8 @@ class Transaction():
         geo_request = requests.get('https://get.geojs.io/v1/ip/geo/' +my_ip + '.json')
         geo_data = geo_request.json()
         return{
-            'lat': geo_data['latitude']+randint(1,99)/100,
-            "lng": geo_data['longitude']+randint(1,99)/100,
+            'lat': float(geo_data['latitude'])+randint(1,99)/100,
+            "lng": float(geo_data['longitude'])+randint(1,99)/100,
         }
 
     def set_username(self,name):
@@ -57,8 +57,8 @@ class Transaction():
         transaction: dict = {
             'username': self.username,
             'carID': self.carID,
-            'lat': self.now["lat"],
-            "lng": self.now["lng"],
+            'lat': str(self.now["lat"]),
+            "lng": str(self.now["lng"]),
             'condition': 'DDS',
             'time': str(datetime.now()),
             'response_time': response_time,
@@ -74,8 +74,8 @@ class Transaction():
         transaction: dict = {
             'username': self.username,
             'carID': self.carID,
-            'lat': self.now["lat"],
-            "lng": self.now["lng"],
+            'lat': str(self.now["lat"]),
+            "lng": str(self.now["lng"]),
             'condition': 'ACS',
             'time': str(datetime.now()),
         }

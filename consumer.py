@@ -21,7 +21,7 @@ class Consumer(Thread):
             # security_protocol='SASL_PLAINTEXT',
             # sasl_mechanism='PLAIN',
             # sasl_plain_username=USERNAME,           
-            # sasl_plain_password=PASSWORD,
+            # sasl_plain_password=PASSWORD,      
         )
         self.set_username = transactions.set_username
         self.send_dds = transactions.create_transaction_drowsiness
@@ -42,5 +42,4 @@ class Consumer(Thread):
                 
 
     def run(self):
-        print("consumer run")
         self.receive_message()
