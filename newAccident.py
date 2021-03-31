@@ -1,25 +1,27 @@
 from accident.main import initInterface
-from consumer import Consumer
 from random import randint
 from string import ascii_letters, digits
 import json
 from kafka.errors import KafkaError
 from kafka import KafkaProducer
 from decouple import config
-import time
-from threading import Thread
+import requests
+from datetime import datetime
 
-KAFKA_BROKER_URL = config('KAFKA_HOST_CAR')
-TRANSACTIONS_TOPIC1= config('KAFKA_AIC_TOPIC')
-DDS_TRANSACTIONS_TOPIC = config('KAFKA_DIC_TOPIC')
-USERNAME_TRANSACTIONS_TOPIC = config('KAFKA_USERNAME_TOPIC')
+KAFKA_BROKER_URL = config('KAFKA_HOST')
+TRANSACTIONS_TOPIC = config('KAFKA_ACD_TOPIC')
+DDS_TOPIC = config('KAFKA_DDS_TOPIC')
 TRANSACTIONS_PER_SECOND = 0.01
 SLEEP_TIME = 1 / TRANSACTIONS_PER_SECOND
-USERNAME = config('USERNAME_IN_CAR')
-PASSWORD = config('PASSWORD_IN_CAR')
+USERNAME = config('USERNAME_KAFKA_ON_CLN')
+PASSWORD = config('PASSWORD_KAFKA_ON_CLN')
 carID = config('CAR_ID')
+
 class Transaction():
     def __init__(self):
+        self.now = self.__gps()
+        self.username = "TS"
+        self.carID = carID
         self.producer = KafkaProducer(
             bootstrap_servers=KAFKA_BROKER_URL,
             api_version=(0, 10, 1),
@@ -30,8 +32,18 @@ class Transaction():
             sasl_plain_password=PASSWORD,
             value_serializer=lambda value: json.dumps(value).encode(),
         )
-        self.countDown = time.time()
-        self.isStart = 1
+
+    
+    def __gps(self)-> dict:
+        ip_request = requests.get('https://get.geojs.io/v1/ip.json')
+        my_ip = ip_request.json()['ip']
+        geo_request = requests.get('https://get.geojs.io/v1/ip/geo/' +my_ip + '.json')
+        geo_data = geo_request.json()
+        return{
+            'lat': float(geo_data['latitude'])+randint(1,99)/100,
+            "lng": float(geo_data['longitude'])+randint(1,99)/100,
+        }
+
 
     def send(self, topic, transaction):
         try:
@@ -49,24 +61,20 @@ class Transaction():
     
     def create_transaction_accident(self) :
         """Create a fake, randomised transaction."""
+        self.now = self.__gps()
         transaction: dict = {
-            'condition': 'AIC',
-            'carID': carID,
+            'username': self.username,
+            'carID': self.carID,
+            'lat': self.now["lat"],
+            "lng": self.now["lng"],
+            'condition': 'ACS',
+            'time':  str(datetime.utcnow().isoformat())+"Z",
         }
         print(transaction)
-        t = time.time()
-        print(t-self.countDown)
-        if(t-self.countDown > 3600 or self.isStart):
-            print("----send-----")
-            self.countDown = t
-            self.isStart = 0
-            self.send(TRANSACTIONS_TOPIC1, transaction)
+        self.send(TRANSACTIONS_TOPIC, transaction)
 
 
 if __name__ == "__main__":
     transaction1 = Transaction()
-    transaction1.send(TRANSACTIONS_TOPIC1,{ 'condition': 'hs'})
-    transaction1.send(DDS_TRANSACTIONS_TOPIC,{ 'condition': 'hs'})
-    transaction1.send(USERNAME_TRANSACTIONS_TOPIC,{ 'condition': 'hs'})
-    accident = initInterface(transaction1,"Detect accident")
+    accident = initInterface(transaction1,"New accident")
     accident.run()

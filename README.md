@@ -3,6 +3,7 @@
 # dependency
 * run start.sh
 # run file
-* python mainFinal.py
+* python newDrowsiness.py
+* python newAccident.py
 
 

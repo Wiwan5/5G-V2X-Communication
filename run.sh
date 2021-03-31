@@ -1,2 +1,0 @@
-python mainFinal.py
-$SHELL

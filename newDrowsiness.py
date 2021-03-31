@@ -1,14 +1,12 @@
-from accident.main import initInterface
-from consumerFinal import Consumer
+from drowsiness.main import initInterfaceDDS
 from random import randint
 from string import ascii_letters, digits
 import json
 from kafka.errors import KafkaError
 from kafka import KafkaProducer
 from decouple import config
-from datetime import datetime
-from threading import Thread
 import requests
+from datetime import datetime
 
 KAFKA_BROKER_URL = config('KAFKA_HOST')
 TRANSACTIONS_TOPIC = config('KAFKA_ACD_TOPIC')
@@ -18,11 +16,11 @@ SLEEP_TIME = 1 / TRANSACTIONS_PER_SECOND
 USERNAME = config('USERNAME_KAFKA_ON_CLN')
 PASSWORD = config('PASSWORD_KAFKA_ON_CLN')
 carID = config('CAR_ID')
+
 class Transaction():
     def __init__(self):
-        # Thread.__init__(self)
         self.now = self.__gps()
-        self.username = ""
+        self.username = "TS"
         self.carID = carID
         self.producer = KafkaProducer(
             bootstrap_servers=KAFKA_BROKER_URL,
@@ -34,21 +32,30 @@ class Transaction():
             sasl_plain_password=PASSWORD,
             value_serializer=lambda value: json.dumps(value).encode(),
         )
-        self.response_time = 0
         self.working_time = datetime.utcnow()
-    
+
     def __gps(self)-> dict:
-        pos = requests.get('http://localhost:4000/position')
-        p = pos.json()
-        if(p["successful"]):
-            return p["data"]
-        else:
-            self.__gps()
+        ip_request = requests.get('https://get.geojs.io/v1/ip.json')
+        my_ip = ip_request.json()['ip']
+        geo_request = requests.get('https://get.geojs.io/v1/ip/geo/' +my_ip + '.json')
+        geo_data = geo_request.json()
+        return{
+            'lat': float(geo_data['latitude'])+randint(1,99)/100,
+            "lng": float(geo_data['longitude'])+randint(1,99)/100,
+        }
 
-    def set_username(self,name):
-        self.username = name
-        self.working_time = datetime.utcnow()
-
+    def send(self, topic, transaction):
+        try:
+            self.producer.send(topic, value=transaction)         
+        except KafkaTimeoutError as kte:
+            print(kte)
+            self.send(topic,transaction)
+        except KafkaError as ke:
+            print(ke)
+            self.send(topic,transaction)
+        except Exception as e:
+            print(e)
+            self.send(topic,transaction)
 
     def create_transaction_drowsiness(self,response_time):
         """Create a fake, randomised transaction."""
@@ -65,43 +72,10 @@ class Transaction():
         }
         print(transaction)
         self.send(DDS_TOPIC,transaction)
-
-    def send(self, topic, transaction):
-        try:
-            self.producer.send(topic, value=transaction)         
-        except KafkaTimeoutError as kte:
-            print(kte)
-            self.send(topic,transaction)
-        except KafkaError as ke:
-            print(ke)
-            self.send(topic,transaction)
-        except Exception as e:
-            print(e)
-            self.send(topic,transaction)
-
-    
-    def create_transaction_accident(self) :
-        """Create a fake, randomised transaction."""
-        self.now = self.__gps()
-        transaction: dict = {
-            'username': self.username,
-            'carID': self.carID,
-            'lat': self.now["lat"],
-            "lng": self.now["lng"],
-            'condition': 'ACS',
-            'time':  str(datetime.utcnow().isoformat())+"Z",
-        }
-        print(transaction)
-        self.send(TRANSACTIONS_TOPIC, transaction)
-
-    def isSuspicious(transactions: dict) -> bool:
-        return transactions['amount'] >= 900
+        
 
 
 if __name__ == "__main__":
     transaction1 = Transaction()
-    # accident = initInterface(transaction1,"Accident from this car")
-    consumer = Consumer(transaction1)
-    # consumer.daemon = True
-    consumer.start()
-    # transaction1.run()
+    dds = initInterfaceDDS(transaction1)
+    dds.run()
