@@ -1,5 +1,4 @@
 from accident.main import initInterface
-from consumer import Consumer
 from random import randint
 from string import ascii_letters, digits
 import json
