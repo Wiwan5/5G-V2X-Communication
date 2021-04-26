@@ -48,9 +48,6 @@ class Transaction():
     def send(self, topic, transaction):
         try:
             self.producer.send(topic, value=transaction)         
-        except KafkaTimeoutError as kte:
-            print(kte)
-            self.send(topic,transaction)
         except KafkaError as ke:
             print(ke)
             self.send(topic,transaction)
