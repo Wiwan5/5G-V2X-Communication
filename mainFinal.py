@@ -43,7 +43,7 @@ class Transaction():
         if(p["successful"]):
             return p["data"]
         else:
-            self.__gps()
+            return p["data"]
 
     def set_username(self,name):
         self.username = name
@@ -53,25 +53,25 @@ class Transaction():
     def create_transaction_drowsiness(self,response_time):
         """Create a fake, randomised transaction."""
         self.now = self.__gps()
-        transaction: dict = {
-            'username': self.username,
-            'carID': self.carID,
-            'lat': self.now["lat"],
-            "lng": self.now["lng"],
-            'condition': 'DDS',
-            'time':  str(datetime.utcnow().isoformat())+"Z",
-            'response_time': response_time,
-            'working_time': (datetime.utcnow()- self.working_time).total_seconds()/3600,
-        }
-        print(transaction)
-        self.send(DDS_TOPIC,transaction)
+        if(self.now and self.username != ""):
+            transaction: dict = {
+                'username': self.username,
+                'carID': self.carID,
+                'lat': self.now["lat"],
+                "lng": self.now["lng"],
+                'condition': 'DDS',
+                'time':  str(datetime.utcnow().isoformat())+"Z",
+                'response_time': response_time,
+                'working_time': (datetime.utcnow()- self.working_time).total_seconds()/3600,
+            }
+            print(transaction)
+            self.send(DDS_TOPIC,transaction)
+        else:
+            print("Driver isn't login or GPS isn't work")
 
     def send(self, topic, transaction):
         try:
             self.producer.send(topic, value=transaction)         
-        except KafkaTimeoutError as kte:
-            print(kte)
-            self.send(topic,transaction)
         except KafkaError as ke:
             print(ke)
             self.send(topic,transaction)
@@ -83,16 +83,19 @@ class Transaction():
     def create_transaction_accident(self) :
         """Create a fake, randomised transaction."""
         self.now = self.__gps()
-        transaction: dict = {
-            'username': self.username,
-            'carID': self.carID,
-            'lat': self.now["lat"],
-            "lng": self.now["lng"],
-            'condition': 'ACS',
-            'time':  str(datetime.utcnow().isoformat())+"Z",
-        }
-        print(transaction)
-        self.send(TRANSACTIONS_TOPIC, transaction)
+        if(self.now and self.username != ""):
+            transaction: dict = {
+                'username': self.username,
+                'carID': self.carID,
+                'lat': self.now["lat"],
+                "lng": self.now["lng"],
+                'condition': 'ACS',
+                'time':  str(datetime.utcnow().isoformat())+"Z",
+            }
+            print(transaction)
+            self.send(TRANSACTIONS_TOPIC, transaction)
+        else:
+            print("Driver isn't login or GPS isn't work")
 
     def isSuspicious(transactions: dict) -> bool:
         return transactions['amount'] >= 900
@@ -100,8 +103,5 @@ class Transaction():
 
 if __name__ == "__main__":
     transaction1 = Transaction()
-    # accident = initInterface(transaction1,"Accident from this car")
     consumer = Consumer(transaction1)
-    # consumer.daemon = True
     consumer.start()
-    # transaction1.run()

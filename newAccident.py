@@ -14,8 +14,8 @@ DDS_TRANSACTIONS_TOPIC = config('KAFKA_DIC_TOPIC')
 USERNAME_TRANSACTIONS_TOPIC = config('KAFKA_USERNAME_TOPIC')
 TRANSACTIONS_PER_SECOND = 0.01
 SLEEP_TIME = 1 / TRANSACTIONS_PER_SECOND
-USERNAME = config('USERNAME_IN_CAR')
-PASSWORD = config('PASSWORD_IN_CAR')
+USERNAME = config('USERNAME_KAFKA_IN_CAR')
+PASSWORD = config('PASSWORD_KAFKA_IN_CAR')
 carID = config('CAR_ID')
 class Transaction():
     def __init__(self):
@@ -35,14 +35,11 @@ class Transaction():
     def send(self, topic, transaction):
         try:
             self.producer.send(topic, value=transaction)         
-        except KafkaTimeoutError as kte:
-            print(kte)
-            self.send(topic,transaction)
         except KafkaError as ke:
-            print(ke)
+            print("err",ke)
             self.send(topic,transaction)
         except Exception as e:
-            print(e)
+            print("error",e)
             self.send(topic,transaction)
 
     
@@ -64,8 +61,8 @@ class Transaction():
 
 if __name__ == "__main__":
     transaction1 = Transaction()
-    transaction1.send(TRANSACTIONS_TOPIC1,{ 'condition': 'hs'})
-    transaction1.send(DDS_TRANSACTIONS_TOPIC,{ 'condition': 'hs'})
-    transaction1.send(USERNAME_TRANSACTIONS_TOPIC,{ 'condition': 'hs'})
+    # transaction1.send(TRANSACTIONS_TOPIC1,{ 'condition': 'hs'})
+    # transaction1.send(DDS_TRANSACTIONS_TOPIC,{ 'condition': 'hs'})
+    # transaction1.send(USERNAME_TRANSACTIONS_TOPIC,{ 'condition': 'hs'})
     accident = initInterface(transaction1,"Detect accident")
     accident.run()

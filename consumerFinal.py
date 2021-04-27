@@ -1,7 +1,7 @@
 from kafka import KafkaConsumer
 from decouple import config
 import json
-
+import time
 from threading import Thread
 KAFKA_BROKER_URL = config('KAFKA_HOST_CAR')
 TRANSACTIONS_TOPIC = config('KAFKA_AIC_TOPIC')
@@ -9,8 +9,8 @@ DDS_TRANSACTIONS_TOPIC = config('KAFKA_DIC_TOPIC')
 USERNAME_TRANSACTIONS_TOPIC = config('KAFKA_USERNAME_TOPIC')
 USERNAME = config('USERNAME_KAFKA_IN_CAR')
 PASSWORD = config('PASSWORD_KAFKA_IN_CAR')
-
-
+Set_up_time_act = 900
+carID = config('CAR_ID')
 class Consumer(Thread):
     def __init__(self, transactions):
         Thread.__init__(self)
@@ -31,11 +31,14 @@ class Consumer(Thread):
         self.send_dds = transactions.create_transaction_drowsiness
         self.response_time = transactions.response_time
         self.send_act = transactions.create_transaction_accident
+        self.time = time.time()
+        self.first_time_act = True
         pass
 
     def receive_message(self):
         for message in self.consumer:
             transaction: dict= message.value
+            print(transaction)
             if "condition" in transaction:
                 if "carID" in transaction and carID == transaction["carID"]:
                     if transaction["condition"] == 'set_account':
@@ -47,7 +50,10 @@ class Consumer(Thread):
                         self.send_dds(transaction["response_time"])
                     if transaction["condition"] == 'AIC':
                         print("act_send")
-                        self.send_act()
+                        if(self.first_time_act or time.time()-self.time>Set_up_time_act):
+                            self.time = time.time()
+                            self.first_time_act = False
+                            self.send_act()
 
     def run(self):
         self.receive_message()
