@@ -2,7 +2,7 @@ from tkinter import *
 
 
 class Accident:
-    def __init__(self, root_frame, transaction):
+    def __init__(self, root_frame, transaction,topic):
         self.root_frame = root_frame
         self.transaction = transaction
         self.home_head = Frame(root_frame)
@@ -10,13 +10,13 @@ class Accident:
         self.home_head.pack()
 
         self.header = Label(self.home_head,
-                            text="Accident",
+                            text=topic,
                             bg="skyblue",
                             font=("Helvetica", 14))
         self.header.grid(row=0, column=0, padx=110, pady=5)
 
         self.new_message_btn = Button(self.home_head,
-                                      text='Alert!',
+                                      text='New Accident',
                                       font=("Helvetica", 12),
                                       bg="#FFBA31",
                                       command=self.transaction.create_transaction_accident)
